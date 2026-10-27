@@ -96,6 +96,14 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
     <div class="ba-hud" hidden>
       <button class="ba-icon-btn" data-act="pause" aria-label="Pause">❚❚</button>
       <div class="ba-time">0.0</div>
+      <div class="ba-tach" aria-hidden="true">
+        <svg viewBox="0 0 40 24">
+          <path class="ba-tach-track" d="M4 22 A16 16 0 0 1 36 22" />
+          <path class="ba-tach-zone" d="M28.78 8.64 A16 16 0 0 1 36 22" />
+          <line class="ba-tach-needle" x1="20" y1="22" x2="20" y2="9" />
+          <circle class="ba-tach-hub" cx="20" cy="22" r="2.2" />
+        </svg>
+      </div>
       <div class="ba-progress">
         <div class="ba-progress-label">— leaves left</div>
         <div class="ba-bar"><div></div></div>
@@ -103,7 +111,7 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
       <div class="ba-wind" aria-hidden="true">➜</div>
     </div>
     <div class="ba-stage"></div>
-    <div class="ba-touch"><div class="ba-hint">Drag to walk · pull back to back up<br>2nd thumb aims</div></div>
+    <div class="ba-touch"><div class="ba-hint">Drag to walk · stand still to blast<br>Pull back to back up · 2nd thumb aims</div></div>
     <div class="ba-screen" data-screen="menu"></div>
     <div class="ba-screen" data-screen="pause" hidden>
       <div class="ba-kicker">Paused</div>
@@ -124,6 +132,8 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
   const leftEl = $('.ba-progress-label');
   const barEl = $<HTMLDivElement>('.ba-bar > div');
   const windEl = $('.ba-wind');
+  const tachEl = $('.ba-tach');
+  const needleEl = root.querySelector('.ba-tach-needle') as SVGLineElement;
   const hint = $('.ba-hint');
   const screens = {
     menu: $('[data-screen="menu"]'),
@@ -159,6 +169,7 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
   let playing = false;
   let lastShownTenths = -1;
   let lastDone = -1;
+  let lastNeedle = NaN;
 
   scene.hooks = {
     onFrame(sim) {
@@ -174,10 +185,18 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
         barEl.style.width = `${Math.min(100, (sim.done / sim.target) * 100)}%`;
       }
       hint.hidden = sim.started;
+      // Tach: blower power 0.3 (light push) … 1.5 (full blast) sweeps -80° … +80°.
+      const power = sim.started ? sim.power : 0.3;
+      const angle = Math.round(-80 + ((power - 0.3) / 1.2) * 160);
+      if (angle !== lastNeedle) {
+        lastNeedle = angle;
+        needleEl.setAttribute('transform', `rotate(${angle} 20 22)`);
+        tachEl.classList.toggle('ba-blast', sim.rev >= 1);
+      }
       const w = Math.hypot(sim.windX, sim.windY);
       windEl.style.opacity = String(Math.min(1, 0.2 + w / 60));
       windEl.style.transform = `rotate(${Math.atan2(sim.windY, sim.windX)}rad) scale(${1 + sim.gust * 0.4})`;
-      audio.set(sim.started && !sim.finished ? 1 : 0.3, sim.playerMoving);
+      audio.set(sim.started && !sim.finished ? 1 : 0.3, sim.started ? sim.power : 1);
     },
     onFinish(sim) {
       finish(sim);
@@ -225,6 +244,7 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
     const sim = new Sim(level, { mode, weather: currentWeather(), seed });
     scene.startRun(sim);
     lastShownTenths = lastDone = -1;
+    lastNeedle = NaN;
     timeEl.textContent = formatTime(0, 1);
     hud.hidden = false;
     hint.hidden = false;
@@ -236,7 +256,7 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
   function finish(sim: Sim) {
     playing = false;
     controls.setEnabled(false);
-    audio.set(0, false);
+    audio.set(0);
     audio.chime();
 
     const prev = Number(storage.get(bestKey()) ?? Infinity);
@@ -277,7 +297,7 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
     if (!playing) return;
     scene.paused = true;
     controls.setEnabled(false);
-    audio.set(0, false);
+    audio.set(0);
     show('pause');
   }
 
@@ -285,7 +305,7 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
     playing = false;
     scene.paused = true;
     controls.setEnabled(false);
-    audio.set(0, false);
+    audio.set(0);
     hud.hidden = true;
     renderMenu();
     preview();

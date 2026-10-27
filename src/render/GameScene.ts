@@ -8,8 +8,9 @@ const STEP_MS = 1000 / TICK_HZ;
 /** Never simulate more than this many ticks per frame (e.g. after a hitch). */
 const MAX_STEPS_PER_FRAME = 6;
 
-const CONE_HALF_ANGLE = 0.49; // matches BLOWER_COS_HALF (render only, trig is fine here)
-const CONE_LENGTH = 58;
+/** The visible cone is drawn a little shorter than the air actually reaches. */
+const CONE_DRAWN = 0.94;
+const STREAK_LIFE = 0.22;
 const BOUNCE_HALF_ANGLE = 0.77; // matches BOUNCE_COS_HALF
 /** Where the landscaper holds the blower, relative to the sim position (the feet). */
 const HANDS_Y = -4;
@@ -141,7 +142,7 @@ export class GameScene extends Phaser.Scene {
 
     for (const layer of level.tileLayers.filter((l) => l.overhead)) world.add(this.tileLayer(level, layer.tiles));
 
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < 48; i++) {
       const img = this.add.image(-10, -10, PIXEL_KEY).setVisible(false);
       world.add(img);
       this.streaks.push({ img, vx: 0, vy: 0, life: 0 });
@@ -236,15 +237,31 @@ export class GameScene extends Phaser.Scene {
     const nx = hx + ax * BLOWER_REACH;
     const ny = hy + ay * BLOWER_REACH;
     const running = sim.started && !sim.finished;
-    fx.fillStyle(0xffffff, running ? 0.09 : 0.05);
+    // Cone follows the sim's throttle and revs: longer, wider and brighter at full blast.
+    const half = Math.acos(sim.blowCosHalf); // render only, trig is fine here
+    const len = sim.blowRange * CONE_DRAWN;
+    fx.fillStyle(0xffffff, running ? 0.05 + 0.04 * sim.power : 0.05);
     fx.fillTriangle(
       nx,
       ny,
-      nx + Math.cos(ang - CONE_HALF_ANGLE) * CONE_LENGTH,
-      ny + Math.sin(ang - CONE_HALF_ANGLE) * CONE_LENGTH,
-      nx + Math.cos(ang + CONE_HALF_ANGLE) * CONE_LENGTH,
-      ny + Math.sin(ang + CONE_HALF_ANGLE) * CONE_LENGTH,
+      nx + Math.cos(ang - half) * len,
+      ny + Math.sin(ang - half) * len,
+      nx + Math.cos(ang + half) * len,
+      ny + Math.sin(ang + half) * len,
     );
+    if (running && sim.rev > 0.3) {
+      // Bright core of the blast.
+      const core = half * 0.45;
+      fx.fillStyle(0xffffff, 0.08 * sim.rev);
+      fx.fillTriangle(
+        nx,
+        ny,
+        nx + Math.cos(ang - core) * len * 0.9,
+        ny + Math.sin(ang - core) * len * 0.9,
+        nx + Math.cos(ang + core) * len * 0.9,
+        ny + Math.sin(ang + core) * len * 0.9,
+      );
+    }
     if (running && sim.bounceRange > 4) {
       const ba = Math.atan2(sim.bounceDY, sim.bounceDX);
       const bx = sim.bounceX;
@@ -262,18 +279,20 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Air streaks.
+    // More, faster, longer-lived and thicker streaks as the power goes up.
     if (running) {
+      const every = 0.016 / sim.power;
       this.streakTimer += dt;
-      while (this.streakTimer > 0.012) {
-        this.streakTimer -= 0.012;
+      while (this.streakTimer > every) {
+        this.streakTimer -= every;
         const s = this.streaks.find((q) => q.life <= 0);
         if (!s) break;
-        const a = ang + (Math.random() * 2 - 1) * CONE_HALF_ANGLE * 0.8;
-        const v = 180 + Math.random() * 80;
+        const a = ang + (Math.random() * 2 - 1) * half * 0.8;
+        const v = (150 + Math.random() * 80) * (0.6 + 0.4 * sim.power);
         s.vx = Math.cos(a) * v;
         s.vy = Math.sin(a) * v;
-        s.life = 0.22;
-        s.img.setPosition(nx, ny).setVisible(true);
+        s.life = (STREAK_LIFE * sim.blowRange) / 62;
+        s.img.setPosition(nx, ny).setScale(sim.rev > 0.6 ? 2 : 1, 1).setRotation(a).setVisible(true);
       }
     }
     for (const s of this.streaks) {
@@ -281,7 +300,7 @@ export class GameScene extends Phaser.Scene {
       s.life -= dt;
       s.img.x += s.vx * dt;
       s.img.y += s.vy * dt;
-      s.img.setAlpha(Math.max(0, s.life / 0.22) * 0.7);
+      s.img.setAlpha(Math.min(1, s.life / STREAK_LIFE) * 0.7);
       if (s.life <= 0) s.img.setVisible(false);
     }
   }

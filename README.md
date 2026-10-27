@@ -15,7 +15,7 @@ npm run art        # rebuild sprites from art/raw (Python: pillow, numpy)
 - **Clear It**: blow the leaves out to the street.
 - **Pile It**: blow the leaves onto the tarp.
 - The clock starts when you first move and stops when 95% of the leaves are done.
-- **Controls:** drag anywhere to walk, and the blower points where you walk. Pull straight back to back up while still blowing forward, which is how you get behind leaves. Put a second thumb down to aim on its own. On desktop, WASD walks and the arrow keys aim.
+- **Controls:** drag anywhere to walk, and the blower points where you walk. Pull straight back to back up while still blowing forward, which is how you get behind leaves. Stand still and the engine revs up to a stronger, longer blast within a second. Put a second thumb down to aim on its own; a light push is a gentle breeze, a full push is full power. On desktop, WASD walks and the arrow keys aim.
 - **Weather:** rain makes some leaves wet (heavier and grippier). Wind adds a steady breeze plus gusts that undo your work.
 - **Surfaces:** leaves slide on pavement, catch on grass, and get stuck in mulch beds.
 - **Walls:** air bounces off walls and the map edges, and out of corners. Aim at the base of a wall to pop pinned leaves back out.

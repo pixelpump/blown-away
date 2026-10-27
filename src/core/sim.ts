@@ -59,6 +59,16 @@ export class Sim {
   playerPX: number;
   playerPY: number;
   playerMoving = false;
+
+  /** Engine revs, 0..1: builds while standing still, drops while walking. */
+  rev = 0;
+  private revTicks = 0;
+  /** Throttle from the aim stick, THROTTLE_MIN..1 (1 with one thumb). */
+  throttle = 1;
+  /** This tick's blower strength (1 = normal) and cone shape. */
+  power = 1;
+  blowRange: number = T.BLOWER_RANGE;
+  blowCosHalf: number = T.BLOWER_COS_HALF;
   /** Walking backwards with the blower still aimed ahead (one-thumb play). */
   backingUp = false;
   /** False until the player first moves or aims, so the first move always sets the aim. */
@@ -178,10 +188,35 @@ export class Sim {
     this.ticks++;
 
     this.updatePlayer(f.mx / 127, f.my / 127, f.ax / 127, f.ay / 127);
+    this.updateBlower(f.ax / 127, f.ay / 127);
     this.updateWind();
     this.updateLeaves();
 
     if (this.done >= this.target) this.finished = true;
+  }
+
+  /**
+   * Throttle and revs. Standing still revs the engine up to a blast; walking
+   * drops it back. A light push on the aim stick gives a gentle breeze.
+   */
+  private updateBlower(ax: number, ay: number): void {
+    // Counted in whole ticks so revs are exact (no floating-point drift).
+    const full = Math.round(T.REV_UP_S * T.TICK_HZ);
+    const down = Math.round(T.REV_UP_S / T.REV_DOWN_S);
+    this.revTicks = this.playerMoving ? Math.max(0, this.revTicks - down) : Math.min(full, this.revTicks + 1);
+    this.rev = this.revTicks / full;
+
+    const alen = Math.sqrt(ax * ax + ay * ay);
+    if (alen > 0.2) {
+      const push = Math.min(1, (alen - 0.2) / (T.THROTTLE_FULL - 0.2));
+      this.throttle = T.THROTTLE_MIN + (1 - T.THROTTLE_MIN) * push;
+    } else {
+      this.throttle = 1;
+    }
+
+    this.power = this.throttle * (1 + T.REV_POWER * this.rev);
+    this.blowRange = T.BLOWER_RANGE * (T.THROTTLE_RANGE + (1 - T.THROTTLE_RANGE) * this.throttle) * (1 + T.REV_RANGE * this.rev);
+    this.blowCosHalf = T.BLOWER_COS_HALF - T.REV_WIDEN * this.rev;
   }
 
   private updatePlayer(mx: number, my: number, ax: number, ay: number): void {
@@ -329,7 +364,7 @@ export class Sim {
 
   /** Cast the air stream from the nozzle; if it hits a wall, set up a reflected cone. */
   private updateBounce(nx: number, ny: number, ax: number, ay: number): void {
-    let best = T.BLOWER_RANGE;
+    let best = this.blowRange;
     let hitNX = 0;
     let hitNY = 0;
     for (const s of this.walls) {
@@ -387,9 +422,9 @@ export class Sim {
     this.bounceDY = ay - 2 * dot * hitNY;
     this.bounceX = nx + ax * best + hitNX;
     this.bounceY = ny + ay * best + hitNY;
-    const left = 1 - best / T.BLOWER_RANGE;
-    this.bounceRange = T.BLOWER_RANGE * left * T.BOUNCE_RANGE;
-    this.bouncePower = T.BLOWER_POWER * left * T.BOUNCE_POWER;
+    const left = 1 - best / this.blowRange;
+    this.bounceRange = this.blowRange * left * T.BOUNCE_RANGE;
+    this.bouncePower = T.BLOWER_POWER * this.power * left * T.BOUNCE_POWER;
   }
 
   private updateLeaves(): void {
@@ -414,7 +449,7 @@ export class Sim {
       let fy = this.windY / mass;
 
       // Blower cone, plus the cone bouncing off whatever wall it hits.
-      this.coneForce(x[i], y[i], nx, ny, ax, ay, T.BLOWER_RANGE, T.BLOWER_POWER / mass, T.BLOWER_COS_HALF, true);
+      this.coneForce(x[i], y[i], nx, ny, ax, ay, this.blowRange, (T.BLOWER_POWER * this.power) / mass, this.blowCosHalf, true);
       let bx = this.fbx;
       let by = this.fby;
       if (this.bounceRange > 0) {

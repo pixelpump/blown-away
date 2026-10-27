@@ -52,13 +52,17 @@ export class BlowerAudio {
     this.engine.start();
   }
 
-  /** level: 0 = off, 0.3 = idling, 1 = full throttle. */
-  set(level: number, moving: boolean): void {
+  /**
+   * level: 0 = off, 0.3 = idling, 1 = running.
+   * power: the blower's current strength (1 = normal, 1.5 = full blast);
+   * the engine pitch and hiss rise with it so revving up is audible.
+   */
+  set(level: number, power = 1): void {
     if (!this.ctx || !this.gain || !this.filter || !this.engine) return;
     const t = this.ctx.currentTime;
-    this.gain.gain.setTargetAtTime(this.muted ? 0 : level * 0.35, t, 0.08);
-    this.filter.frequency.setTargetAtTime(moving ? 900 : 700, t, 0.15);
-    this.engine.frequency.setTargetAtTime(level > 0.5 ? 110 : 70, t, 0.2);
+    this.gain.gain.setTargetAtTime(this.muted ? 0 : level * (0.22 + 0.13 * power), t, 0.08);
+    this.filter.frequency.setTargetAtTime(400 + 450 * power, t, 0.15);
+    this.engine.frequency.setTargetAtTime(level > 0.5 ? 60 + 55 * power : 60, t, 0.12);
   }
 
   chime(): void {

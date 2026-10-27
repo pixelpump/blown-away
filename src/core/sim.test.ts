@@ -139,6 +139,44 @@ describe('Sim', () => {
     expect(sim.aimX).toBeCloseTo(1);
   });
 
+  it('standing still revs the blower up; walking drops it back', () => {
+    // Leaves behind the player, so nothing reaches the exit and ends the run.
+    const sim = new Sim(strip({ leaves: [{ x: 0, y: 0, w: 8, h: 8, count: 3 }] }), dry);
+    stepN(sim, aim(1, 0), 60); // one second standing still
+    expect(sim.rev).toBe(1);
+    expect(sim.power).toBeCloseTo(1.5);
+    expect(sim.blowRange).toBeGreaterThan(70);
+    stepN(sim, walk(0, 1), 15); // a quarter second walking
+    expect(sim.rev).toBe(0);
+    expect(sim.power).toBe(1);
+  });
+
+  it('a full blast pushes harder than walking power', () => {
+    const kick = (rev: number) => {
+      const sim = new Sim(strip(), dry);
+      // Stand still out of reach to rev up, then step in and blow once.
+      sim.playerX = sim.playerPX = 150;
+      stepN(sim, aim(-1, 0), rev);
+      sim.playerX = sim.playerPX = 20;
+      sim.vx.fill(0);
+      sim.step(aim(1, 0));
+      return sim.vx.reduce((a, v) => a + v, 0);
+    };
+    expect(kick(60)).toBeGreaterThan(kick(1) * 1.3);
+  });
+
+  it('a light push on the aim stick is a gentle breeze', () => {
+    const distance = (push: number) => {
+      const sim = new Sim(strip(), dry);
+      const before = sim.x.reduce((a, v) => a + v, 0);
+      const [ax, ay] = quantizeStick(push, 0);
+      stepN(sim, { mx: 0, my: 0, ax, ay }, 15);
+      return sim.x.reduce((a, v) => a + v, 0) - before;
+    };
+    expect(distance(0.3)).toBeLessThan(distance(1) * 0.6);
+    expect(distance(0.3)).toBeGreaterThan(0);
+  });
+
   it('keeps the player out of solids', () => {
     const level = strip({ solids: [{ type: 'car', x: 40, y: 0, w: 20, h: 96 }], leaves: [{ x: 0, y: 0, w: 16, h: 16, count: 1 }] });
     const sim = new Sim(level, dry);
@@ -155,8 +193,10 @@ describe('Sim', () => {
       stepN(sim, aim(1, 0), 30);
       return sim.x.reduce((s, v) => s + v, 0) - before;
     };
+    // Standing still revs the blower up, so mulch leaves may budge; pavement
+    // leaves must still travel much further.
     expect(moved(0)).toBeGreaterThan(1); // pavement
-    expect(moved(1)).toBe(0); // mulch
+    expect(moved(0)).toBeGreaterThan(moved(1) * 3); // mulch
   });
 
   it('clears leaves that reach an exit, and finishes', () => {

@@ -56,6 +56,47 @@
   letter-spacing: -0.02em;
   min-width: 4.6ch;
 }
+.ba-tach {
+  width: 40px;
+  height: 24px;
+  flex: none;
+}
+.ba-tach svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.ba-tach-track,
+.ba-tach-zone {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.ba-tach-track {
+  stroke: var(--ba-panel-3);
+}
+.ba-tach-zone {
+  stroke: var(--ba-mustard);
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+.ba-tach-needle {
+  stroke: var(--ba-text);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.ba-tach-hub {
+  fill: var(--ba-text);
+}
+.ba-tach.ba-blast .ba-tach-zone {
+  opacity: 1;
+}
+.ba-tach.ba-blast .ba-tach-needle,
+.ba-tach.ba-blast .ba-tach-hub {
+  stroke: var(--ba-mustard);
+  fill: var(--ba-mustard);
+}
 .ba-progress {
   flex: 1;
   display: flex;

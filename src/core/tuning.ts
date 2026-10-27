@@ -26,6 +26,19 @@ export const BLOWER_COS_HALF = 0.88;
 export const BLOWER_POWER = 1500;
 /** Within this distance of the nozzle the air catches leaves in a wider arc. */
 export const NEAR_WASH = 13;
+/** Standing still revs the engine to full in this long; walking drops it in REV_DOWN_S. */
+export const REV_UP_S = 1;
+export const REV_DOWN_S = 0.25;
+/** At full revs: extra power, extra reach, and a wider cone (lower cos of half-angle). */
+export const REV_POWER = 0.5;
+export const REV_RANGE = 0.25;
+export const REV_WIDEN = 0.06;
+/** Aim stick: a light push gives this much power… */
+export const THROTTLE_MIN = 0.3;
+/** …and this fraction of the reach; full power from this much push. */
+export const THROTTLE_RANGE = 0.6;
+export const THROTTLE_FULL = 0.9;
+
 /** 0 = air pushes straight along the aim, 1 = pushes radially away from the nozzle. */
 export const BLOWER_SPREAD = 0.3;
 
