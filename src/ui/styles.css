@@ -1,0 +1,334 @@
+/* Everything is scoped under .ba-root so it can live inside Shepherd without clashing with Tailwind. */
+.ba-root {
+  --ba-bg: #2a2118;
+  --ba-panel: #3d3024;
+  --ba-panel-2: #4a3b2f;
+  --ba-panel-3: #5c4b3d;
+  --ba-line: #6b5847;
+  --ba-text: #f3ece2;
+  --ba-muted: #b9a991;
+  --ba-green: #6fae3a;
+  --ba-green-dark: #4f8a24;
+  --ba-mustard: #b8901f;
+  --ba-red: #d9533b;
+  --ba-display: 'Montserrat', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ba-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--ba-bg);
+  color: var(--ba-text);
+  font-family: var(--ba-display);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.ba-root *,
+.ba-root *::before,
+.ba-root *::after {
+  box-sizing: border-box;
+}
+
+/* --- HUD ---------------------------------------------------------------- */
+.ba-hud {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: max(8px, env(safe-area-inset-top)) 12px 8px;
+  background: var(--ba-panel);
+  border-bottom: 1px solid var(--ba-line);
+}
+.ba-hud[hidden] {
+  display: none;
+}
+.ba-time {
+  font-family: var(--ba-mono);
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  min-width: 4.6ch;
+}
+.ba-progress {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ba-progress-label {
+  font-family: var(--ba-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ba-muted);
+}
+.ba-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--ba-bg);
+  overflow: hidden;
+}
+.ba-bar > div {
+  height: 100%;
+  width: 0;
+  background: var(--ba-green);
+  border-radius: 4px;
+  transition: width 0.15s;
+}
+.ba-wind {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: var(--ba-muted);
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.25;
+  transition: opacity 0.3s;
+}
+.ba-icon-btn {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ba-panel-3);
+  color: var(--ba-text);
+  font: 700 16px var(--ba-display);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+/* --- Stage + touch ------------------------------------------------------ */
+.ba-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.ba-stage canvas {
+  display: block;
+}
+.ba-touch {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: none;
+  touch-action: none;
+}
+.ba-touch.ba-active {
+  display: block;
+}
+.ba-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  text-align: center;
+  font-family: var(--ba-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ba-muted);
+  pointer-events: none;
+  animation: ba-pulse 1.6s ease-in-out infinite;
+}
+.ba-hint[hidden] {
+  display: none;
+}
+@keyframes ba-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+.ba-stick {
+  position: absolute;
+  left: -46px;
+  top: -46px;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 2px solid rgba(243, 236, 226, 0.35);
+  background: rgba(243, 236, 226, 0.06);
+  pointer-events: none;
+}
+.ba-stick-aim {
+  border-color: rgba(232, 106, 26, 0.6);
+}
+.ba-knob {
+  position: absolute;
+  left: 26px;
+  top: 26px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(243, 236, 226, 0.55);
+}
+.ba-stick-aim .ba-knob {
+  background: rgba(232, 106, 26, 0.75);
+}
+
+/* --- Screens (menu, pause, results) ------------------------------------- */
+.ba-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  background: rgba(42, 33, 24, 0.94);
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+.ba-screen[hidden] {
+  display: none;
+}
+.ba-title {
+  margin: 0;
+  font-size: clamp(44px, 14vw, 64px);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+.ba-title span {
+  color: var(--ba-green);
+}
+.ba-kicker {
+  font-family: var(--ba-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ba-muted);
+}
+.ba-card {
+  background: var(--ba-panel);
+  border: 1px solid var(--ba-line);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ba-seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 6px;
+}
+.ba-seg button {
+  min-height: 48px;
+  border: 2px solid var(--ba-line);
+  border-radius: 10px;
+  background: var(--ba-panel-2);
+  color: var(--ba-text);
+  font: 800 15px var(--ba-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.ba-seg button[aria-pressed='true'] {
+  border-color: var(--ba-green);
+  background: var(--ba-green-dark);
+}
+.ba-desc {
+  font-size: 14px;
+  color: var(--ba-muted);
+  margin: 0;
+}
+.ba-btn {
+  min-height: 60px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--ba-green);
+  color: #16200c;
+  font: 900 22px var(--ba-display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.ba-btn:active {
+  transform: translateY(1px);
+}
+.ba-btn-secondary {
+  background: var(--ba-panel-3);
+  color: var(--ba-text);
+  font-size: 17px;
+  min-height: 52px;
+}
+.ba-row {
+  display: flex;
+  gap: 8px;
+}
+.ba-row > * {
+  flex: 1;
+}
+.ba-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--ba-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ba-muted);
+}
+.ba-link {
+  background: none;
+  border: 0;
+  color: var(--ba-muted);
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  padding: 10px 0;
+  cursor: pointer;
+}
+.ba-best {
+  font-family: var(--ba-mono);
+  font-size: 13px;
+  color: var(--ba-muted);
+}
+.ba-best strong {
+  color: var(--ba-text);
+}
+
+/* Results */
+.ba-result-time {
+  font-family: var(--ba-mono);
+  font-size: clamp(56px, 19vw, 84px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+.ba-stars {
+  font-size: 34px;
+  letter-spacing: 6px;
+  color: var(--ba-panel-3);
+}
+.ba-stars .on {
+  color: var(--ba-mustard);
+}
+.ba-badge {
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--ba-mustard);
+  color: #231a08;
+  font: 800 13px var(--ba-display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ba-badge[hidden] {
+  display: none;
+}
