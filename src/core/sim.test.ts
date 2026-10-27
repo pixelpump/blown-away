@@ -68,7 +68,8 @@ describe('Sim', () => {
   });
 
   it('does not blow leaves behind the player', () => {
-    const sim = new Sim(strip(), dry);
+    // Far from any wall, so no air bounces back.
+    const sim = new Sim(strip({ start: { x: 90, y: 48 }, leaves: [{ x: 100, y: 44, w: 8, h: 8, count: 10 }] }), dry);
     const before = Array.from(sim.x);
     stepN(sim, aim(-1, 0), 30);
     expect(Array.from(sim.x)).toEqual(before);
@@ -97,6 +98,45 @@ describe('Sim', () => {
     stepN(sim, aim(-0.6, -0.8), 40); // aim up-left into the wall
     expect(sim.bounceRange).toBeGreaterThan(0);
     expect(sim.y.reduce((s, v) => s + v, 0)).toBeGreaterThan(before + sim.count * 5);
+  });
+
+  it('frees a leaf wedged in a corner', () => {
+    const level = makeLevel({
+      cols: 10,
+      rows: 8,
+      modes: 'clear',
+      start: { x: 20, y: 30 },
+      solids: [
+        { type: 'house', x: 0, y: 0, w: 160, h: 16 },
+        { type: 'fence', x: 0, y: 0, w: 4, h: 128 },
+      ],
+      leaves: [{ x: 3.5, y: 15.5, w: 4, h: 4, count: 1 }], // spawns at (5.5, 17.5)
+      goals: [{ type: 'exit', x: 0, y: 112, w: 160, h: 16 }],
+    });
+    const sim = new Sim(level, dry);
+    sim.playerX = sim.playerPX = 14;
+    sim.playerY = sim.playerPY = 26;
+    stepN(sim, aim(-0.6, -0.8), 50); // aim into the corner
+    expect(Math.hypot(sim.x[0] - 5.5, sim.y[0] - 17.5)).toBeGreaterThan(10);
+  });
+
+  it('treats the map edge as a wall that air bounces off', () => {
+    const level = strip({ modes: 'clear', start: { x: 20, y: 10 }, leaves: [{ x: 30, y: 0, w: 8, h: 6, count: 4 }] });
+    const sim = new Sim(level, dry);
+    stepN(sim, aim(0.5, -0.87), 30); // up-right, into the top edge
+    expect(sim.bounceRange).toBeGreaterThan(0);
+    expect(Math.min(...sim.y)).toBeGreaterThan(4);
+  });
+
+  it('backing up keeps the blower aimed ahead (one thumb)', () => {
+    const sim = new Sim(strip(), dry);
+    stepN(sim, walk(0, 1), 5); // walk down: blower aims down
+    expect(sim.aimY).toBeCloseTo(1);
+    stepN(sim, walk(0, -1), 20); // pull straight back
+    expect(sim.aimY).toBeCloseTo(1);
+    expect(sim.backingUp).toBe(true);
+    stepN(sim, walk(1, 0), 5); // sideways turns the blower
+    expect(sim.aimX).toBeCloseTo(1);
   });
 
   it('keeps the player out of solids', () => {

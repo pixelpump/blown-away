@@ -103,7 +103,7 @@ export function mountGame(el: HTMLElement, opts: MountOptions = {}): GameHandle 
       <div class="ba-wind" aria-hidden="true">➜</div>
     </div>
     <div class="ba-stage"></div>
-    <div class="ba-touch"><div class="ba-hint">Drag anywhere to walk · 2nd thumb aims</div></div>
+    <div class="ba-touch"><div class="ba-hint">Drag to walk · pull back to back up<br>2nd thumb aims</div></div>
     <div class="ba-screen" data-screen="menu"></div>
     <div class="ba-screen" data-screen="pause" hidden>
       <div class="ba-kicker">Paused</div>

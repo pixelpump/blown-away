@@ -11,6 +11,11 @@ export const DT = 1 / TICK_HZ;
 
 export const PLAYER_RADIUS = 5;
 export const PLAYER_SPEED = 72;
+/**
+ * One-thumb play: walking within ±45° of straight backwards keeps the
+ * blower aimed ahead (cos 135° ≈ -0.7). Set to -2 to turn this off.
+ */
+export const BACK_UP_COS = -0.7;
 
 /** How far in front of the player's centre the air comes out. */
 export const NOZZLE_OFFSET = 7;
@@ -20,7 +25,7 @@ export const BLOWER_COS_HALF = 0.88;
 /** Acceleration applied to a dry leaf right at the nozzle, centre of the cone. */
 export const BLOWER_POWER = 1500;
 /** Within this distance of the nozzle the air catches leaves in a wider arc. */
-export const NEAR_WASH = 9;
+export const NEAR_WASH = 13;
 /** 0 = air pushes straight along the aim, 1 = pushes radially away from the nozzle. */
 export const BLOWER_SPREAD = 0.3;
 
@@ -41,6 +46,8 @@ export const BOUNCE_POWER = 0.65;
 export const WALL_DEFLECT_DIST = 3;
 /** …keeping this fraction of the push (0 = absorbed, 1 = perfect bounce). */
 export const WALL_DEFLECT = 0.8;
+/** Extra push straight off a wall for leaves lying against it, as a fraction of the air's push. */
+export const WALL_LIFT = 0.3;
 
 export const WET_MASS = 1.7;
 export const WET_GRIP = 1.3;

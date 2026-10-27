@@ -14,10 +14,10 @@ npm run build      # typecheck + production build in dist/
 - **Clear It**: blow the leaves out to the street.
 - **Pile It**: blow the leaves onto the tarp.
 - The clock starts when you first move and stops when 95% of the leaves are done.
-- **Controls:** drag anywhere to walk, and the blower points where you walk. Put a second thumb down to aim on its own. On desktop, WASD walks and the arrow keys aim.
+- **Controls:** drag anywhere to walk, and the blower points where you walk. Pull straight back to back up while still blowing forward, which is how you get behind leaves. Put a second thumb down to aim on its own. On desktop, WASD walks and the arrow keys aim.
 - **Weather:** rain makes some leaves wet (heavier and grippier). Wind adds a steady breeze plus gusts that undo your work.
 - **Surfaces:** leaves slide on pavement, catch on grass, and get stuck in mulch beds.
-- **Walls:** air bounces off walls. Aim at the base of a wall to pop pinned leaves back out.
+- **Walls:** air bounces off walls and the map edges, and out of corners. Aim at the base of a wall to pop pinned leaves back out.
 
 ## Layout
 
@@ -28,6 +28,7 @@ src/core/     Pure TypeScript game rules. No browser APIs, fully deterministic.
   map.ts        Tiled map loader + validation
   input.ts      quantized input frames + run-length encoded input logs
   replay.ts     re-run a recorded run (for server-side score verification)
+  reachability.ts  level lint: finds spots where a leaf could get stuck for good
 src/render/   Phaser: draws the sim, interpolates between ticks, procedural blower audio
 src/ui/       DOM: touch joysticks, styles
 src/embed/    mountGame() + <BlownAway/> React wrapper for Shepherd

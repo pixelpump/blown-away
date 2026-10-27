@@ -59,6 +59,10 @@ export class Sim {
   playerPX: number;
   playerPY: number;
   playerMoving = false;
+  /** Walking backwards with the blower still aimed ahead (one-thumb play). */
+  backingUp = false;
+  /** False until the player first moves or aims, so the first move always sets the aim. */
+  private aimed = false;
   aimX = 0;
   aimY = -1;
 
@@ -84,6 +88,8 @@ export class Sim {
   done = 0;
   readonly target: number;
 
+  /** Solids plus the map edges, which block leaves and bounce air like any wall. */
+  private readonly walls: Rect[];
   private readonly log = new InputLog();
   private readonly gustRng: Rng;
   private gustWait: number;
@@ -96,6 +102,14 @@ export class Sim {
     readonly level: Level,
     readonly options: SimOptions,
   ) {
+    const E = 32;
+    this.walls = [
+      ...level.solids,
+      { x: -E, y: -E, w: level.width + 2 * E, h: E },
+      { x: -E, y: level.height, w: level.width + 2 * E, h: E },
+      { x: -E, y: 0, w: E, h: level.height },
+      { x: level.width, y: 0, w: E, h: level.height },
+    ];
     this.playerX = this.playerPX = level.playerStart.x;
     this.playerY = this.playerPY = level.playerStart.y;
 
@@ -217,10 +231,21 @@ export class Sim {
     if (alen > 0.2) {
       this.aimX = ax / alen;
       this.aimY = ay / alen;
+      this.aimed = true;
     } else if (mlen > 0.2) {
       const l = Math.min(mlen, 1); // mx/my were already normalised if mlen > 1
-      this.aimX = mx / l;
-      this.aimY = my / l;
+      const dx = mx / l;
+      const dy = my / l;
+      // Pulling straight back backs up while still blowing forward, so you can
+      // get behind leaves without blowing them the wrong way.
+      this.backingUp = this.aimed && dx * this.aimX + dy * this.aimY < T.BACK_UP_COS;
+      if (!this.backingUp) {
+        this.aimX = dx;
+        this.aimY = dy;
+        this.aimed = true;
+      }
+    } else {
+      this.backingUp = false;
     }
   }
 
@@ -307,7 +332,7 @@ export class Sim {
     let best = T.BLOWER_RANGE;
     let hitNX = 0;
     let hitNY = 0;
-    for (const s of this.level.solids) {
+    for (const s of this.walls) {
       if (inRect(s, nx, ny)) {
         // Nozzle is pressed into the wall: bounce straight off the nearest face.
         const left = nx - s.x;
@@ -399,9 +424,13 @@ export class Sim {
       }
       if (bx !== 0 || by !== 0) {
         // Air that hits a wall bounces off it, so aiming at the base of a
-        // wall pops leaves back out instead of pinning them there.
+        // wall pops leaves back out instead of pinning them there. In a
+        // corner it bounces off both walls. Air also gets under leaves lying
+        // against a wall and peels them off it, so they don't slide along
+        // walls into dead ends.
         const near = R + T.WALL_DEFLECT_DIST;
-        for (const s of level.solids) {
+        const push = Math.sqrt(bx * bx + by * by);
+        for (const s of this.walls) {
           if (!inRect(s, x[i], y[i], near)) continue;
           const left = x[i] - (s.x - near);
           const right = s.x + s.w + near - x[i];
@@ -415,7 +444,8 @@ export class Sim {
             bx -= 2 * into * nX * T.WALL_DEFLECT;
             by -= 2 * into * nY * T.WALL_DEFLECT;
           }
-          break;
+          bx += nX * push * T.WALL_LIFT;
+          by += nY * push * T.WALL_LIFT;
         }
         fx += bx;
         fy += by;
@@ -450,7 +480,7 @@ export class Sim {
       let lx = x[i] + nvx * T.DT;
       let ly = y[i] + nvy * T.DT;
 
-      for (const s of level.solids) {
+      for (const s of this.walls) {
         if (!inRect(s, lx, ly, R)) continue;
         const left = lx - (s.x - R);
         const right = s.x + s.w + R - lx;
@@ -467,6 +497,7 @@ export class Sim {
           nvx *= 0.8;
         }
       }
+      // Safety net; the edge walls normally handle this.
       if (lx < R || lx > level.width - R) {
         lx = lx < R ? R : level.width - R;
         nvx = -nvx * T.LEAF_BOUNCE;

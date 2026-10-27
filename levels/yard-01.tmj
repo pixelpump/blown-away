@@ -282,9 +282,9 @@
      "id": 1,
      "name": "",
      "type": "house",
-     "x": 16,
+     "x": 4,
      "y": 0,
-     "width": 160,
+     "width": 184,
      "height": 52,
      "rotation": 0,
      "visible": true

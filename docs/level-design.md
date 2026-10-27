@@ -52,10 +52,20 @@ Set the custom property `surface` on tiles in the tileset (Tileset editor → se
 
 ## Design tips
 
-- **Leave walking room.** The player is about 10 px wide. A gap narrower than 12 px between a wall and a leaf zone creates leaves you can only reach by bouncing air off the wall.
+- **Leave walking room, and avoid dead-end nooks.** The player is about 10 px wide. Leaves blow into any gap, but the player can only follow into gaps wider than about 12 px. Run walls right up to fences rather than leaving a slot.
 - **Corners are the hard part.** The last 5% of leaves decide the time, so every corner should be reachable.
 - **Exits** in Clear It work best along a whole edge, like the street. Small exits turn into puzzles, which can be fun later.
 - **Tarps** work best near the middle, so players can sweep toward them from several sides.
 - Set par times only after playing a yard a few times. Three stars should take some effort.
 
-If a map has a problem, the game throws an error explaining what to fix, for example *"Pile It mode needs a "tarp" in the "goals" layer."* `npm test` checks every bundled level loads.
+If a map has a problem, the game throws an error explaining what to fix, for example *"Pile It mode needs a "tarp" in the "goals" layer."*
+
+## Stuck-leaf check
+
+`npm test` also runs a **stuck-leaf lint** on every level and mode. It puts a leaf at every spot along every wall, edge and corner, and checks that the player can walk somewhere and blow it closer to the goal (allowing two blows, e.g. off the top of a shrub, then down). A failure lists the exact coordinates:
+
+```
+expected [ { x: 6.5, y: 2.5 }, … ] to deeply equal []
+```
+
+Find that spot in Tiled (the coordinates are in pixels) and open it up. The usual culprit is a dead-end nook narrower than the player, about 12 px. Fix the map instead of loosening the test.
