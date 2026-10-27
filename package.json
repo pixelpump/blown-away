@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "art": "python3 scripts/process-art.py",
-    "build:mow": "tsc --noEmit && GAME=mow vite build"
+    "build:mow": "tsc --noEmit && GAME=mow vite build",
+    "build:plot": "tsc --noEmit && GAME=plot vite build"
   },
   "peerDependencies": {
     "react": ">=18"

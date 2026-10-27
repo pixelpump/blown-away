@@ -10,6 +10,19 @@ npm run build      # typecheck + production build in dist/
 npm run art        # rebuild sprites from art/raw (Python: pillow, numpy)
 ```
 
+## Garden Plot (daily puzzle prototype)
+
+A daily logic puzzle in the "Queens" format: plant one tree in every row, every column and every garden bed, and trees can't touch, not even diagonally. Everyone gets the same puzzle each day, it grows from 7×7 on Monday to 9×9 at the weekend, and the ranking is time to solve.
+
+```
+npm run dev         # then open /plot.html
+npm run build:plot  # production build in dist-plot/ (no Phaser: ~7 KB gzipped)
+```
+
+- `src/plot/puzzle.ts`: seeded generator (same date → same puzzle; a salt makes it per company), uniqueness check, and a solver that uses human deductions so every puzzle is solvable without guessing. Tests check the next 90 days of puzzles.
+- `src/plot/mountPlot.ts`: the game. Tap once for ×, twice for a tree, drag to mark several; undo, clear, conflict highlighting, streaks.
+- **Staff Board verification** is simpler than for the action games: the server regenerates the day's puzzle from the date and company, checks the submitted answer, and times the run itself (puzzle served → answer received).
+
 ## Stripes (mowing prototype)
 
 A second game in the same repo, sharing the art, levels and tooling: swipe to steer a mower that drives itself along tile-sized lanes, mow every patch of lawn as fast as you can, and avoid the kids' toys (+3 s each).
