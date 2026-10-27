@@ -373,3 +373,46 @@
 .ba-badge[hidden] {
   display: none;
 }
+
+/* --- Stripes (mowing prototype) ---------------------------------------- */
+.mw-penalty {
+  min-width: 3ch;
+  font-family: var(--ba-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ba-red);
+  text-align: right;
+}
+.mw-penalty.mw-flash {
+  animation: mw-flash 0.6s ease-out;
+}
+@keyframes mw-flash {
+  0% {
+    transform: scale(1.8);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.mw-swipe {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  color: rgba(243, 236, 226, 0.85);
+  pointer-events: none;
+  transform: rotate(var(--rot));
+  animation: mw-swipe 0.4s ease-out forwards;
+}
+@keyframes mw-swipe {
+  to {
+    opacity: 0;
+    transform: rotate(var(--rot)) translateX(14px);
+  }
+}
+.ba-desc strong {
+  color: var(--ba-text);
+}

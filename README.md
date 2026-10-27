@@ -10,6 +10,17 @@ npm run build      # typecheck + production build in dist/
 npm run art        # rebuild sprites from art/raw (Python: pillow, numpy)
 ```
 
+## Stripes (mowing prototype)
+
+A second game in the same repo, sharing the art, levels and tooling: swipe to steer a mower that drives itself along tile-sized lanes, mow every patch of lawn as fast as you can, and avoid the kids' toys (+3 s each).
+
+```
+npm run dev        # then open /mow.html
+npm run build:mow  # production build in dist-mow/
+```
+
+Code in `src/mow/`, levels in `levels/mow/` (same Tiled conventions and tileset; add a `toys` object layer). Tests check every lawn tile is reachable and that a route-planning bot can finish each level.
+
 ## How it plays
 
 - **Clear It**: blow the leaves out to the street.

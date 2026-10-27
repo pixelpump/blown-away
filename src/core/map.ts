@@ -65,13 +65,13 @@ export interface Level {
 
 // --- Minimal Tiled JSON types ------------------------------------------------
 
-interface TiledProperty {
+export interface TiledProperty {
   name: string;
   type?: string;
   value: unknown;
 }
 
-interface TiledObject {
+export interface TiledObject {
   id: number;
   name?: string;
   type?: string;
@@ -87,7 +87,7 @@ interface TiledObject {
   properties?: TiledProperty[];
 }
 
-interface TiledLayer {
+export interface TiledLayer {
   type: string;
   name: string;
   data?: number[] | string;
@@ -124,14 +124,14 @@ export interface TiledTileset {
 export class LevelError extends Error {}
 
 /** Gids carry flip flags in their top bits. */
-const GID_MASK = 0x1fffffff;
+export const GID_MASK = 0x1fffffff;
 
-function prop<T>(props: TiledProperty[] | undefined, name: string, fallback: T): T {
+export function prop<T>(props: TiledProperty[] | undefined, name: string, fallback: T): T {
   const p = props?.find((q) => q.name === name);
   return p === undefined ? fallback : (p.value as T);
 }
 
-function objectType(o: TiledObject): string {
+export function objectType(o: TiledObject): string {
   return (o.type || o.class || o.name || '').trim().toLowerCase();
 }
 
@@ -146,7 +146,7 @@ export function joinPath(base: string, rel: string): string {
   return out.join('/');
 }
 
-function flattenLayers(layers: TiledLayer[]): TiledLayer[] {
+export function flattenLayers(layers: TiledLayer[]): TiledLayer[] {
   return layers.flatMap((l) => (l.type === 'group' ? flattenLayers(l.layers ?? []) : [l]));
 }
 

@@ -1,5 +1,6 @@
 node_modules
 dist
+dist-mow
 *.log
 .DS_Store
 # Tiled session files
