@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { LEAF_ACTIVE, LEAF_CLEARED, LEAF_COLLECTED, NEUTRAL, Sim, TICK_HZ, type InputFrame, type Level } from '../core';
 import type { LevelAsset } from './levels';
-import { EXIT, SOLID_COLOURS, TARP, TARP_EDGE } from './palette';
-import { leafKey, makeTextures, PIXEL_KEY, PLAYER_KEY } from './textures';
+import { EXIT, SOLID_COLOURS } from './palette';
+import { BLOWER_KEY, FENCE_KEY, leafFrame, LEAVES_KEY, loadSprites, makeAnimations, PIXEL_KEY, PLAYER_KEY, SOLID_SPRITES, TARP_KEY, type Facing } from './textures';
 
 const STEP_MS = 1000 / TICK_HZ;
 /** Never simulate more than this many ticks per frame (e.g. after a hitch). */
@@ -11,6 +11,11 @@ const MAX_STEPS_PER_FRAME = 6;
 const CONE_HALF_ANGLE = 0.49; // matches BLOWER_COS_HALF (render only, trig is fine here)
 const CONE_LENGTH = 58;
 const BOUNCE_HALF_ANGLE = 0.77; // matches BOUNCE_COS_HALF
+/** Where the landscaper holds the blower, relative to the sim position (the feet). */
+const HANDS_Y = -4;
+/** Blower sprite: pivot at the handle, nozzle tip this many px from the pivot. */
+const BLOWER_PIVOT_X = 0.3;
+const BLOWER_REACH = 14;
 
 interface Streak {
   img: Phaser.GameObjects.Image;
@@ -48,7 +53,9 @@ export class GameScene extends Phaser.Scene {
   private pileX = new Float32Array(0);
   private pileY = new Float32Array(0);
   private piled = 0;
-  private player?: Phaser.GameObjects.Image;
+  private player?: Phaser.GameObjects.Sprite;
+  private blower?: Phaser.GameObjects.Image;
+  private facing: Facing = 'up';
   private fx?: Phaser.GameObjects.Graphics;
   private streaks: Streak[] = [];
   private streakTimer = 0;
@@ -59,10 +66,11 @@ export class GameScene extends Phaser.Scene {
 
   preload(): void {
     for (const a of this.assets) this.load.image(`tiles:${a.level.id}`, a.tilesetUrl);
+    loadSprites(this);
   }
 
   create(): void {
-    makeTextures(this);
+    makeAnimations(this);
     this.readyResolve();
   }
 
@@ -91,29 +99,23 @@ export class GameScene extends Phaser.Scene {
         for (let x = e.x + 2; x < e.x + e.w; x += 8) g.fillRect(x, e.y + e.h / 2 - 1, 4, 2);
       }
     } else {
-      for (const t of level.tarps) {
-        g.fillStyle(TARP).fillRect(t.x, t.y, t.w, t.h);
-        g.lineStyle(1, TARP_EDGE).strokeRect(t.x + 0.5, t.y + 0.5, t.w - 1, t.h - 1);
-        g.fillStyle(0xd0d0d0);
-        for (const [cx, cy] of [[t.x + 1, t.y + 1], [t.x + t.w - 2, t.y + 1], [t.x + 1, t.y + t.h - 2], [t.x + t.w - 2, t.y + t.h - 2]]) {
-          g.fillRect(cx, cy, 1, 1);
-        }
-      }
+      for (const t of level.tarps) world.add(this.add.image(t.x, t.y, TARP_KEY).setOrigin(0).setDisplaySize(t.w, t.h));
     }
 
-    if (level.placeholderSolids) {
-      for (const s of level.solids) {
-        const c = SOLID_COLOURS[s.kind] ?? SOLID_COLOURS.solid;
-        g.fillStyle(c).fillRect(s.x, s.y, s.w, s.h);
+    for (const s of level.solids) {
+      const art = SOLID_SPRITES[s.kind];
+      if (art?.draw === 'fit') {
+        world.add(this.add.image(s.x, s.y, art.key).setOrigin(0).setDisplaySize(s.w, s.h));
+      } else if (art?.draw === 'centre') {
+        world.add(this.add.image(s.x + s.w / 2, s.y + s.h / 2, art.key));
+      } else if (s.kind === 'fence') {
+        // A 6 px vertical strip repeated along the fence; turned for horizontal fences.
+        const vertical = s.h >= s.w;
+        const fence = this.add.tileSprite(s.x + s.w / 2, s.y + s.h / 2, 6, vertical ? s.h : s.w, FENCE_KEY);
+        world.add(vertical ? fence : fence.setAngle(90));
+      } else if (level.placeholderSolids) {
+        g.fillStyle(SOLID_COLOURS[s.kind] ?? SOLID_COLOURS.solid).fillRect(s.x, s.y, s.w, s.h);
         g.fillStyle(0x000000, 0.25).fillRect(s.x, s.y + s.h - 2, s.w, 2);
-        if (s.kind === 'house') {
-          g.fillStyle(0x000000, 0.12);
-          for (let y = s.y + 4; y < s.y + s.h - 4; y += 6) g.fillRect(s.x, y, s.w, 1);
-        }
-        if (s.kind === 'car') {
-          g.fillStyle(0x9ab8d0).fillRect(s.x + 4, s.y + 10, s.w - 8, 8);
-          g.fillStyle(0x9ab8d0).fillRect(s.x + 4, s.y + s.h - 16, s.w - 8, 6);
-        }
       }
     }
 
@@ -123,7 +125,7 @@ export class GameScene extends Phaser.Scene {
     this.pileX = new Float32Array(sim.count);
     this.pileY = new Float32Array(sim.count);
     for (let i = 0; i < sim.count; i++) {
-      const img = this.add.image(sim.x[i], sim.y[i], leafKey(sim.variant[i], sim.wet[i] === 1));
+      const img = this.add.image(sim.x[i], sim.y[i], LEAVES_KEY, leafFrame(sim.variant[i], sim.wet[i] === 1));
       this.leafRot[i] = (i * 2.399) % (Math.PI * 2);
       img.setRotation(this.leafRot[i]);
       this.leaves.push(img);
@@ -132,8 +134,10 @@ export class GameScene extends Phaser.Scene {
 
     this.fx = this.add.graphics();
     world.add(this.fx);
-    this.player = this.add.image(sim.playerX, sim.playerY, PLAYER_KEY).setOrigin(0.5, 0.7);
-    world.add(this.player);
+    this.blower = this.add.image(0, 0, BLOWER_KEY).setOrigin(BLOWER_PIVOT_X, 0.5);
+    // Feet sit a little below the centre of the 10 px collision body.
+    this.player = this.add.sprite(sim.playerX, sim.playerY, PLAYER_KEY).setOrigin(0.5, 1);
+    world.add([this.blower, this.player]);
 
     for (const layer of level.tileLayers.filter((l) => l.overhead)) world.add(this.tileLayer(level, layer.tiles));
 
@@ -207,15 +211,30 @@ export class GameScene extends Phaser.Scene {
     const p = this.player!;
     const x = lerp(sim.playerPX, sim.playerX);
     const y = lerp(sim.playerPY, sim.playerY);
-    p.setPosition(x, y);
-    if (sim.aimX !== 0) p.setFlipX(sim.aimX < 0);
+    p.setPosition(x, y + 4);
 
-    // Air cone + nozzle.
+    // Face where the blower points (with a little hysteresis so diagonals don't flicker).
+    const ax = sim.aimX;
+    const ay = sim.aimY;
+    const side = this.facing === 'side' ? Math.abs(ax) > Math.abs(ay) * 0.85 : Math.abs(ax) > Math.abs(ay) * 1.15;
+    this.facing = side ? 'side' : ay > 0 ? 'down' : 'up';
+    p.setFlipX(this.facing === 'side' && ax < 0);
+    p.anims.play(`${sim.playerMoving ? 'walk' : 'idle'}-${this.facing}`, true);
+
+    // Blower: rotates freely with the aim; behind the body when aiming away from the camera.
+    const ang = Math.atan2(ay, ax);
+    const hx = x;
+    const hy = y + HANDS_Y;
+    const b = this.blower!;
+    b.setPosition(hx, hy).setRotation(ang).setFlipY(ax < 0);
+    if (this.facing === 'up') this.world!.moveBelow(b, p);
+    else this.world!.moveAbove(b, p);
+
+    // Air cone from the nozzle tip.
     const fx = this.fx!;
     fx.clear();
-    const ang = Math.atan2(sim.aimY, sim.aimX);
-    const nx = x + sim.aimX * 7;
-    const ny = y + sim.aimY * 7;
+    const nx = hx + ax * BLOWER_REACH;
+    const ny = hy + ay * BLOWER_REACH;
     const running = sim.started && !sim.finished;
     fx.fillStyle(0xffffff, running ? 0.09 : 0.05);
     fx.fillTriangle(
@@ -241,9 +260,6 @@ export class GameScene extends Phaser.Scene {
         by + Math.sin(ba + BOUNCE_HALF_ANGLE) * len,
       );
     }
-    fx.lineStyle(3, 0xe86a1a);
-    fx.lineBetween(x, y, nx, ny);
-    fx.fillStyle(0x2b2b2b).fillRect(nx - 1, ny - 1, 2, 2);
 
     // Air streaks.
     if (running) {

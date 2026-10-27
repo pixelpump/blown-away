@@ -10,10 +10,10 @@ Open `levels/yard-01.tmj` in Tiled to see a working example. The quickest way to
 |---|---|
 | Orientation | Orthogonal |
 | Tile size | 16 × 16 |
-| Map size | 12 × 18 tiles fits a phone in portrait (192 × 288 px) |
+| Map size | 12 × 20 tiles fits a phone in portrait (192 × 320 px) |
 | Infinite | Off |
 | Tile layer format | CSV (the default) |
-| Tileset | Exactly one, external (`.tsj`), e.g. `tilesets/placeholder.tsj` |
+| Tileset | Exactly one, external (`.tsj`), e.g. `tilesets/yard.tsj` |
 
 ### Map properties
 
@@ -24,7 +24,7 @@ Open `levels/yard-01.tmj` in Tiled to see a working example. The quickest way to
 | `parClear` | float | `50` | 3-star time in seconds for Clear It |
 | `parPile` | float | `80` | 3-star time in seconds for Pile It |
 | `clearThreshold` | float | `0.95` | Fraction of leaves needed to stop the clock |
-| `placeholderSolids` | bool | `true` | Draw coloured boxes for solids. Turn it off once real art covers them. |
+| `placeholderSolids` | bool | `true` | Draw coloured boxes for solids whose class has no art yet. |
 
 ## Layers
 
@@ -32,7 +32,7 @@ Open `levels/yard-01.tmj` in Tiled to see a working example. The quickest way to
 |---|---|---|
 | `ground` | Tile layer | **Required.** Grass, driveway, beds… Each tile's `surface` sets how leaves behave. |
 | `overhead…` | Tile layer | Optional. Drawn above the player (roof edges, tree canopies). Any name starting with `overhead`. |
-| `solids` | Object layer | Rectangles that block the player and leaves. Set the object **Class** to `house`, `fence`, `car`, `shrub` or `tree` (used for placeholder colours). |
+| `solids` | Object layer | Rectangles that block the player and leaves. Set the object **Class** to pick the art: `house`, `truck`, `shrub` or `fence`. House and truck art stretches to fill the rectangle, so keep their proportions (house 184 × 72, truck 36 × 77). Classes without art yet are drawn as coloured boxes. |
 | `leaves` | Object layer | Rectangles where leaves spawn. Add an int property `count`. Around 300 leaves total per yard is a good target. |
 | `goals` | Object layer | Rectangles with Class `tarp` (Pile It) and/or `exit` (Clear It). |
 | `markers` | Object layer | A **point** with Class or name `player_start`. |

@@ -38,7 +38,7 @@ describe('yard-01', () => {
     expect(level.tarps.length).toBeGreaterThan(0);
     expect(level.exits.length).toBeGreaterThan(0);
     expect(level.width).toBe(192);
-    expect(level.height).toBe(288);
+    expect(level.height).toBe(320);
     expect(level.leafZones.reduce((s, z) => s + z.count, 0)).toBe(300);
   });
 
@@ -46,7 +46,7 @@ describe('yard-01', () => {
     const at = (c: number, r: number) => level.surface[r * level.cols + c];
     expect(at(3, 8)).toBe(0); // grass
     expect(at(9, 8)).toBe(1); // driveway = pavement
-    expect(at(3, 4)).toBe(2); // flower bed = mulch
+    expect(at(3, 6)).toBe(2); // flower bed = mulch
     expect(at(7, 8)).toBe(3); // gravel
   });
 });

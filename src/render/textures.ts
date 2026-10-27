@@ -1,51 +1,73 @@
 import type Phaser from 'phaser';
-import { LEAF_COLOURS, WET_LEAF_COLOURS } from './palette';
+import blowerUrl from './sprites/blower.png';
+import fenceUrl from './sprites/fence.png';
+import houseUrl from './sprites/house.png';
+import landscaperUrl from './sprites/landscaper.png';
+import leavesUrl from './sprites/leaves.png';
+import shrubUrl from './sprites/shrub.png';
+import sheets from './sprites/sprites.json';
+import tarpUrl from './sprites/tarp.png';
+import truckUrl from './sprites/truck.png';
 
-export const leafKey = (variant: number, wet: boolean) => `leaf-${wet ? 'wet' : 'dry'}-${variant}`;
-export const PLAYER_KEY = 'player';
+// Sprites are generated from art/raw by scripts/process-art.py.
+
+export const PLAYER_KEY = 'landscaper';
+export const BLOWER_KEY = 'blower';
+export const LEAVES_KEY = 'leaves';
+export const FENCE_KEY = 'fence';
+export const TARP_KEY = 'tarp';
 export const PIXEL_KEY = 'pixel';
 
-/** Draw placeholder sprites into textures. Swap for a spritesheet later. */
-export function makeTextures(scene: Phaser.Scene): void {
+/** Leaf sheet: frames 0–3 dry, 4–7 the same leaves wet. */
+export const leafFrame = (variant: number, wet: boolean) => variant + (wet ? 4 : 0);
+
+/**
+ * Solid object kinds (Tiled class) that have art. `fit` stretches the sprite
+ * over the solid's rectangle; `centre` draws it at its own size, centred.
+ */
+export const SOLID_SPRITES: Record<string, { key: string; draw: 'fit' | 'centre' }> = {
+  house: { key: 'house', draw: 'fit' },
+  truck: { key: 'truck', draw: 'fit' },
+  car: { key: 'truck', draw: 'fit' },
+  shrub: { key: 'shrub', draw: 'centre' },
+};
+
+export function loadSprites(scene: Phaser.Scene): void {
+  const { frameWidth, frameHeight } = sheets.landscaper;
+  scene.load.spritesheet(PLAYER_KEY, landscaperUrl, { frameWidth, frameHeight });
+  scene.load.spritesheet(LEAVES_KEY, leavesUrl, { frameWidth: 6, frameHeight: 6 });
+  scene.load.image(BLOWER_KEY, blowerUrl);
+  scene.load.image(FENCE_KEY, fenceUrl);
+  scene.load.image(TARP_KEY, tarpUrl);
+  scene.load.image('house', houseUrl);
+  scene.load.image('truck', truckUrl);
+  scene.load.image('shrub', shrubUrl);
+}
+
+/** Landscaper sheet rows: 0 facing down, 1 facing up, 2 facing right (left = mirrored). */
+const ROWS = ['down', 'up', 'side'] as const;
+export type Facing = (typeof ROWS)[number];
+
+export function makeAnimations(scene: Phaser.Scene): void {
+  ROWS.forEach((dir, row) => {
+    const first = row * 6;
+    scene.anims.create({
+      key: `idle-${dir}`,
+      frames: scene.anims.generateFrameNumbers(PLAYER_KEY, { start: first, end: first + 1 }),
+      frameRate: 2,
+      repeat: -1,
+    });
+    scene.anims.create({
+      key: `walk-${dir}`,
+      frames: scene.anims.generateFrameNumbers(PLAYER_KEY, { start: first + 2, end: first + 5 }),
+      frameRate: 9,
+      repeat: -1,
+    });
+  });
+
   const g = scene.add.graphics();
-
-  const leaf = (colour: number, key: string) => {
-    g.clear();
-    g.fillStyle(colour);
-    g.fillRect(1, 0, 2, 1);
-    g.fillRect(0, 1, 4, 1);
-    g.fillRect(1, 2, 2, 1);
-    g.fillStyle(0x000000, 0.25);
-    g.fillRect(3, 1, 1, 1);
-    g.generateTexture(key, 4, 3);
-  };
-  LEAF_COLOURS.forEach((c, i) => leaf(c, leafKey(i, false)));
-  WET_LEAF_COLOURS.forEach((c, i) => leaf(c, leafKey(i, true)));
-
-  // Landscaper, 10×14: cap, face, hi-vis vest, work pants, boots.
-  g.clear();
-  const px = (c: number, x: number, y: number, w: number, h: number) => {
-    g.fillStyle(c);
-    g.fillRect(x, y, w, h);
-  };
-  px(0x5b3b22, 2, 0, 6, 2); // cap
-  px(0x4a2e1a, 1, 2, 8, 1); // brim
-  px(0xe0a882, 3, 3, 4, 2); // face
-  px(0x2b2b2b, 2, 3, 1, 2); // ear defenders
-  px(0x2b2b2b, 7, 3, 1, 2);
-  px(0xc8e03a, 1, 5, 8, 5); // vest
-  px(0xf2f2f2, 1, 7, 8, 1); // reflective stripe
-  px(0xe0a882, 0, 6, 1, 3); // arms
-  px(0xe0a882, 9, 6, 1, 3);
-  px(0x3b4a5a, 2, 10, 6, 2); // pants
-  px(0x2a1d12, 2, 12, 2, 2); // boots
-  px(0x2a1d12, 6, 12, 2, 2);
-  g.generateTexture(PLAYER_KEY, 10, 14);
-
-  g.clear();
   g.fillStyle(0xffffff);
   g.fillRect(0, 0, 1, 1);
   g.generateTexture(PIXEL_KEY, 1, 1);
-
   g.destroy();
 }

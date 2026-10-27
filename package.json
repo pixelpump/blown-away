@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "gen:tileset": "node scripts/gen-placeholder-tileset.mjs"
+    "art": "python3 scripts/process-art.py"
   },
   "peerDependencies": {
     "react": ">=18"

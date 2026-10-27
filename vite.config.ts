@@ -6,6 +6,9 @@ export default defineConfig({
   build: {
     // Phaser is ~1.2 MB unminified; it is only loaded when the game is opened.
     chunkSizeWarningLimit: 1600,
+    // Inline every sprite (all small) so the game is one JS file plus CSS:
+    // nothing extra to serve when embedding it.
+    assetsInlineLimit: 64 * 1024,
   },
   test: {
     environment: 'node',

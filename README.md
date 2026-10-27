@@ -7,6 +7,7 @@ npm install
 npm run dev        # http://localhost:5173, also on your LAN for phone testing
 npm test           # Vitest: simulation, level loading, replays
 npm run build      # typecheck + production build in dist/
+npm run art        # rebuild sprites from art/raw (Python: pillow, numpy)
 ```
 
 ## How it plays
@@ -33,6 +34,7 @@ src/render/   Phaser: draws the sim, interpolates between ticks, procedural blow
 src/ui/       DOM: touch joysticks, styles
 src/embed/    mountGame() + <BlownAway/> React wrapper for Shepherd
 levels/       Tiled maps (.tmj) and tilesets (.tsj + .png)
+art/raw/      original art; scripts/process-art.py turns it into sprites
 docs/         level design, art spec, Shepherd integration
 ```
 
@@ -48,5 +50,5 @@ If you change anything in `tuning.ts`, old runs will replay differently. Treat t
 ## Docs
 
 - [Level design with Tiled](docs/level-design.md)
-- [Art spec](docs/art-spec.md)
+- [Art: replacing and adding sprites](docs/art-spec.md)
 - [Shepherd integration](docs/shepherd-integration.md)

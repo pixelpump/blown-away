@@ -1,41 +1,30 @@
-# Art spec
+# Art
 
-Everything on screen right now is placeholder: coloured boxes and a generated tileset. Real art drops in without code changes wherever possible.
+The game's art starts as large AI-generated images in `art/raw/`. A script turns them into small, crisp game sprites:
 
-## Ground rules
+```
+npm run art          # = python3 scripts/process-art.py  (needs: pip install pillow numpy)
+```
 
-- **PNG, transparent background, 1× scale.** The game scales it up with crisp pixels, so don't upscale it yourself.
-- **No anti-aliasing or soft brushes.** Use hard pixels only.
-- **Top-down view**, with a slight front tilt (like Stardew Valley or classic Zelda), so walls and people show a little of their front.
-- **Palette:** a limited palette keeps everything coherent. Pick one, such as [Endesga 32](https://lospec.com/palette-list/endesga-32) or a custom one built from the Staff Board browns and greens, and stick to it.
-- **Scale reference:** one tile is 16 × 16 px, and the landscaper is about 10 px wide.
+It writes the sprites to `src/render/sprites/` and the ground tileset to `levels/tilesets/yard.png`. Re-run it whenever something in `art/raw/` changes, then check the result in the game.
 
-## Priority order
+## Replacing a piece of art
 
-### 1. The landscaper (biggest impact)
+Keep the **same file name and the same layout**, and the script and game pick it up with no code changes.
 
-- **Frame size:** 16 × 24 px. The body should be about 10 px wide and centred, with the feet on the bottom row.
-- **Look:** work clothes, hi-vis vest, cap, ear defenders.
-- **Leave the blower out of the body sprite.** Players can aim independently of walking direction, so the blower tube is a **separate sprite** (about 10 × 4 px, nozzle pointing right) that the game rotates.
-- Animations, with each row a direction:
-
-| Row | Direction | Frames |
+| File in `art/raw/` | Layout | Becomes |
 |---|---|---|
-| 1 | Down (facing camera) | idle ×2, walk ×4 |
-| 2 | Up (facing away) | idle ×2, walk ×4 |
-| 3 | Right (left is mirrored) | idle ×2, walk ×4 |
+| `PixelConstructionWorkerSpriteSheet.png` | 6 columns × 3 rows: facing down, up, right. Each row has 2 idle frames then 4 walk frames. Left is mirrored. | `landscaper.png`, 26 px tall |
+| `PixelArtLeafBlowerSprite.png` | One blower, nozzle pointing right | `blower.png`, 20 × 5 |
+| `Pixel-ArtAutumnLeafSpriteSheet.png` | 4 columns × 2 rows: dry, then the same leaves wet | `leaves.png`, 8 leaves at 6 × 6 |
+| `Pixel-ArtRooftopandYardAssetSheet.png` | Truck, shrub, tarp, fence and house roof on one sheet, separated by transparency | `truck.png`, `shrub.png`, `tarp.png`, `fence.png`, `house.png` |
+| `PixelArtTerrainTileAtlas2.png` | 5 columns × 2 rows of ground tiles (slots below) | `levels/tilesets/yard.png`, 16 × 16 tiles |
 
-So one sheet is 6 frames × 3 rows, or 96 × 72 px.
+`RetroRPGTerrainTextureAtlas.png` is an alternative ground set with the same layout. To use it instead, change the file name in `tiles()` in the script.
 
-### 2. Leaves
+On the objects sheet, the script tells objects apart by shape: the house is the biggest, the truck the tallest, the fence the widest and thinnest, the shrub the squarest, and the tarp is what's left. Keep them roughly like that when you replace the sheet.
 
-- 4 × 4 px each (5 × 5 at most).
-- 4 dry colours (orange, red, yellow, brown) plus 4 darker, wetter versions.
-- One sheet, 8 leaves in a row. Optionally add a second row with a slightly rotated "tumble" frame for each.
-
-### 3. Ground tileset
-
-Replace `levels/tilesets/placeholder.png` with the same grid of 16 × 16 tiles in 5 columns, and everything updates. The current slots are:
+### Ground tile slots
 
 | # | Tile | Surface |
 |---|---|---|
@@ -50,24 +39,18 @@ Replace `levels/tilesets/placeholder.png` with the same grid of 16 × 16 tiles i
 | 8 | Flower bed | mulch |
 | 9 | Patio / porch stone | pavement |
 
-You can add more tiles, such as grass-to-driveway edges, corners or a lawn border. Extend the image, then set each new tile's `surface` in Tiled.
+## Adding new art
 
-### 4. Obstacles
+New objects, such as a tree, a trampoline or a second vehicle, need:
+1. a few lines in `scripts/process-art.py`, to cut the object out and give it a size, and
+2. an entry in `SOLID_SPRITES` in `src/render/textures.ts`, so solids of that Tiled class draw it.
 
-| Object | Size in yard-01 | Notes |
-|---|---|---|
-| House / garage roof | 160 × 52 | Seen from above. Can be built from tiles in an `overhead` layer. |
-| Pickup truck | 36 × 56 | Top-down. A crew truck would be a nice touch. |
-| Shrub | 16 × 16 | Round, dark green |
-| Fence | 4 px wide, tiles vertically | Wooden |
-| Tarp | 48 × 40 | Blue, with grommets. Ideally a 9-slice so it can be any size. |
+Solids whose class has no art are drawn as coloured boxes, so a new object can go into a level before its art exists.
 
-### 5. Nice to have
+## Style notes for new pieces
 
-- A pixel "BLOWN AWAY" wordmark for the menu
-- Air puff particles (3–4 frames, white, 4 × 4)
-- A leaf pile sprite for the tarp in Pile It (3 sizes)
-
-## Hand-off
-
-Drop files in `art/` with a short note on frame order, and I'll wire them in. Rough first drafts are fine and useful: I can wire them up early so we see how they read at phone size before you polish.
+- Top-down with a slight front tilt; light from the top-left.
+- Warm autumn palette, dark-brown outlines, hard pixels with no soft brushes.
+- Transparent background (ground tiles excepted).
+- Generate big. The script shrinks it, and bold, simple shapes survive the shrink best. Fine detail such as small flowers or text gets lost.
+- **Scale reference:** one tile is 16 px. The landscaper is 26 px tall, the truck 36 × 77, the house 184 × 72.
